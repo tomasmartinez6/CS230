@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import torch
+from torch import nn
 from model import TwoLayerModel
 from dataset import VolleyballDataset
 from trainer import Trainer
@@ -50,7 +51,15 @@ def main():
 
 def train_test_baseline(train_X, train_Y, val_X, val_Y):
     print("Started Training")
-    logReg = LogisticRegression(random_state=0, max_iter=1000000).fit(train_X, train_Y)
+    logReg = LogisticRegression(random_state=0, max_iter=1000000)
+
+    logReg = logReg.fit(val_X.iloc[:3], val_Y.iloc[:3])
+    pre_val_preds = logReg.predict(val_X)
+    pre_val_acc = accuracy_score(val_Y, pre_val_preds)
+    print("Before Training: Val Accuracy:", pre_val_acc)
+
+    logReg = logReg.fit(train_X, train_Y)
+
     train_preds = logReg.predict(train_X)
     train_acc = accuracy_score(train_Y, train_preds)
     print("Train Accuracy:", train_acc)
@@ -79,15 +88,18 @@ def test_naive(train_X, train_Y, val_X, val_Y):
 def train_test_milestone(train_X, train_Y, val_X, val_Y):
     ##############################################################################################
     # MILESTONE TRAINING CONFIGURATIONS
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     EPOCHS = 1
-    LR = 0.01
+    LR = 0.1
     GRAPH=False
     PRINT_PRETRAINING_ACC=False
-    input_dims = train_X.shape[1]
-    model = TwoLayerModel(input_dims)
+    
+    input_dims = 11
+    print("input_dims:", input_dims)
+    # model = TwoLayerModel(input_dims)
+    model = nn.Sequential(nn.Linear(input_dims, input_dims), nn.ReLU(), nn.Linear(input_dims, 1), nn.Sigmoid())
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.SGD(model.parameters(), lr=LR) # torch.optim.Adam(model.parameters(), lr=LR)
     ##############################################################################################
     
 

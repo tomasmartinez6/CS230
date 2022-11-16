@@ -2,19 +2,19 @@ from torch import nn
 import torch
 from sklearn.metrics import accuracy_score
 
-
 class Trainer():
     def __init__(self, 
             model, 
             train_dataloader, val_dataloader, test_dataloader):
         
         self.model = model
+        
 
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.test_dataloader = test_dataloader
 
-        self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.BCELoss() # nn.BCEWithLogitsLoss()
     
     def train(self, num_epochs, optimizer, create_graph=False):
         train_accs = []
@@ -38,7 +38,6 @@ class Trainer():
                 optimizer.step()
 
                 loss_granular.append(loss.detach().numpy())
-
                 # print statistics
                 running_loss += loss.item()
                 if i % 1000 == 999:    # print every 2000 mini-batches
@@ -57,7 +56,7 @@ class Trainer():
                 val_accs.append(val_acc)
                 losses.append(running_loss)
 
-        return train_accs, val_accs, losses #loss_granular
+        return train_accs, val_accs, loss_granular
 
     def predict(self, dataloader):
         # returns predictions and corresponding labels

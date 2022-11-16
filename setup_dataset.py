@@ -18,11 +18,6 @@ def main():
     print("Started processing data")
     dataset = pd.read_csv(data_path)
     print("Loaded data")
-    # length = len(dataset)
-    # train_end = int(length * 0.8)
-    # val_start = train_end
-    # val_end = int(length * .9)
-    # test_start = val_end
 
     # Only use columns above
     dataset = dataset[columns]
