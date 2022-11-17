@@ -88,16 +88,22 @@ def test_naive(train_X, train_Y, val_X, val_Y):
 def train_test_milestone(train_X, train_Y, val_X, val_Y):
     ##############################################################################################
     # MILESTONE TRAINING CONFIGURATIONS
-    BATCH_SIZE = 8
-    EPOCHS = 1
+    BATCH_SIZE = 32
+    EPOCHS = 10
     LR = 0.1
     GRAPH=False
     PRINT_PRETRAINING_ACC=False
+    USE_GPU=False
+    MODEL_PATH='milestone_ep{}.pt'.format(EPOCHS)
     
     input_dims = len(train_X.iloc[0])
     print("input_dims:", input_dims)
-    model = TwoLayerModel(input_dims)
-    # model = TestModel(input_dims)
+
+    device = enable_gpu() if USE_GPU else 'cpu'
+    print("Training on:", device)
+
+    # model = TwoLayerModel(input_dims)
+    model = TestModel(input_dims)
 
     optimizer = torch.optim.SGD(model.parameters(), lr=LR) # torch.optim.Adam(model.parameters(), lr=LR)
     ##############################################################################################
@@ -111,7 +117,7 @@ def train_test_milestone(train_X, train_Y, val_X, val_Y):
     testset = VolleyballDataset("test")
     test_dataloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=True, num_workers=2)
 
-    trainer = Trainer(model, train_dataloader, val_dataloader, test_dataloader)
+    trainer = Trainer(model, train_dataloader, val_dataloader, test_dataloader, device)
     # Pretraining vals
     if PRINT_PRETRAINING_ACC:
         milestone_pre_val_preds, val_Y = trainer.predict(val_dataloader)
@@ -125,6 +131,8 @@ def train_test_milestone(train_X, train_Y, val_X, val_Y):
         plot_train_curve(train_accs, val_accs, losses)
 
     print("SIUUU DONE TRAINING")
+    torch.save(model.state_dict(), MODEL_PATH)
+    print("Model successfully saved at", MODEL_PATH)
     milestone_val_preds, val_Y = trainer.predict(val_dataloader)
     milestone_val_acc = accuracy_score(val_Y, milestone_val_preds)
     print("Milestone Val Accuracy:", milestone_val_acc)
@@ -140,6 +148,13 @@ def plot_train_curve(train_accs, val_accs, losses):
     plt.plot(losses, label="loss")
     plt.legend()
     plt.show()
+
+def enable_gpu():
+    # this ensures that the current MacOS version is at least 12.3+
+    print(torch.backends.mps.is_available())
+    # this ensures that the current current PyTorch installation was built with MPS activated.
+    print(torch.backends.mps.is_built())
+    return torch.device("mps")
     
 
 if __name__ == '__main__':

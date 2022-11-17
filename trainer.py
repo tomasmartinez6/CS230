@@ -5,9 +5,9 @@ from sklearn.metrics import accuracy_score
 class Trainer():
     def __init__(self, 
             model, 
-            train_dataloader, val_dataloader, test_dataloader):
+            train_dataloader, val_dataloader, test_dataloader, device):
         
-        self.model = model
+        self.model = model.to(device)
         
 
         self.train_dataloader = train_dataloader
@@ -15,6 +15,8 @@ class Trainer():
         self.test_dataloader = test_dataloader
 
         self.loss_fn = nn.BCELoss() # nn.BCEWithLogitsLoss()
+
+        self.device = device
     
     def train(self, num_epochs, optimizer, create_graph=False):
         train_accs = []
@@ -31,13 +33,13 @@ class Trainer():
                 optimizer.zero_grad()
 
                 # forward + backward + optimize
-                outputs = self.model(inputs)
+                outputs = self.model(inputs.to(self.device))
 
-                loss = self.loss_fn(outputs, labels.unsqueeze(1))
+                loss = self.loss_fn(outputs, labels.unsqueeze(1).to(self.device))
                 loss.backward()
                 optimizer.step()
 
-                loss_granular.append(loss.detach().numpy())
+                loss_granular.append(loss.to('cpu').detach().numpy())
                 # print statistics
                 running_loss += loss.item()
                 if i % 1000 == 999:    # print every 2000 mini-batches
@@ -69,15 +71,15 @@ class Trainer():
             # Training Phase 
             for i, batch in enumerate(train_loader):
                 images, labels = batch
-                out = model(images)
+                out = model(images.to(self.device))
     #             loss = model.training_step(batch)
-                loss = nn.BCELoss()(out.squeeze(), labels)   #y_batch.unsqueeze(1)
+                loss = nn.BCELoss()(out.squeeze(), labels.to(self.device))   #y_batch.unsqueeze(1)
 
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
 
-                epoch_loss += loss.item()
+                epoch_loss += loss.item().to('cpu')
 
                 if i % 1000 == 999:    # print every 2000 mini-batches
                     print(f'[{epoch + 1}, {i + 1:5d}] loss: {loss.item():.3f}')
@@ -91,13 +93,16 @@ class Trainer():
         # returns predictions and corresponding labels
         Y = []
         preds = []
+        self.model.eval()
         with torch.no_grad():
             for data in dataloader:
                 inputs, labels = data
                 # calculate outputs by running images through the network
-                outputs = self.model(inputs)
+                # convert input shape from [1, 11] to [11]
+                # inputs = inputs.squeeze()
+                outputs = self.model(inputs.to(self.device))
                 # the class with the highest energy is what we choose as prediction
-                predicted = (outputs.data.squeeze() > 0.5).float()
+                predicted = (outputs.to('cpu').data.squeeze() > 0.5).float()
      
                 preds.append(predicted)
                 Y.append(labels.squeeze())
