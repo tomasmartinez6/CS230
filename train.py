@@ -3,7 +3,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import torch
 from torch import nn
-from model import TwoLayerModel
+from model import TwoLayerModel, TestModel
 from dataset import VolleyballDataset
 from trainer import Trainer
 import pandas as pd
@@ -94,10 +94,10 @@ def train_test_milestone(train_X, train_Y, val_X, val_Y):
     GRAPH=False
     PRINT_PRETRAINING_ACC=False
     
-    input_dims = 11
+    input_dims = len(train_X.iloc[0])
     print("input_dims:", input_dims)
-    # model = TwoLayerModel(input_dims)
-    model = nn.Sequential(nn.Linear(input_dims, input_dims), nn.ReLU(), nn.Linear(input_dims, 1), nn.Sigmoid())
+    model = TwoLayerModel(input_dims)
+    # model = TestModel(input_dims)
 
     optimizer = torch.optim.SGD(model.parameters(), lr=LR) # torch.optim.Adam(model.parameters(), lr=LR)
     ##############################################################################################
@@ -119,6 +119,7 @@ def train_test_milestone(train_X, train_Y, val_X, val_Y):
         print("Before Training Milestone Val Accuracy:", milestone_pre_val_acc)
     # TRAIN!
     train_accs, val_accs, losses = trainer.train(EPOCHS, optimizer, create_graph=GRAPH)
+    # trainer.fit(EPOCHS, LR, model, train_dataloader, val_dataloader)
 
     if GRAPH:
         plot_train_curve(train_accs, val_accs, losses)

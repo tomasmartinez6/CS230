@@ -33,7 +33,7 @@ class Trainer():
                 # forward + backward + optimize
                 outputs = self.model(inputs)
 
-                loss = self.loss_fn(outputs.squeeze(), labels)
+                loss = self.loss_fn(outputs, labels.unsqueeze(1))
                 loss.backward()
                 optimizer.step()
 
@@ -42,7 +42,6 @@ class Trainer():
                 running_loss += loss.item()
                 if i % 1000 == 999:    # print every 2000 mini-batches
                     print(f'[{epoch + 1}, {i + 1:5d}] loss: {loss.item():.3f}')
-                    running_loss = 0.0
             print(f'[Epoch:{epoch + 1}] loss: {running_loss / len(self.train_dataloader):.3f}')
             if create_graph:
                 # Predict after each epoch of training
@@ -57,6 +56,36 @@ class Trainer():
                 losses.append(running_loss)
 
         return train_accs, val_accs, loss_granular
+    
+    def fit(self, epochs, lr, model, train_loader, val_loader, opt_func=torch.optim.Adam):
+        history = []
+        optimizer = opt_func(model.parameters(), lr)
+        train_loss = []
+        train_accuracy = []
+
+        for epoch in range(epochs):
+            epoch_loss = 0
+            epoch_acc = 0
+            # Training Phase 
+            for i, batch in enumerate(train_loader):
+                images, labels = batch
+                out = model(images)
+    #             loss = model.training_step(batch)
+                loss = nn.BCELoss()(out.squeeze(), labels)   #y_batch.unsqueeze(1)
+
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+
+                epoch_loss += loss.item()
+
+                if i % 1000 == 999:    # print every 2000 mini-batches
+                    print(f'[{epoch + 1}, {i + 1:5d}] loss: {loss.item():.3f}')
+
+            train_loss.append(epoch_loss/len(train_loader))
+
+    #         print(train_loss)
+        return  history, train_loss, train_accuracy
 
     def predict(self, dataloader):
         # returns predictions and corresponding labels
@@ -68,9 +97,10 @@ class Trainer():
                 # calculate outputs by running images through the network
                 outputs = self.model(inputs)
                 # the class with the highest energy is what we choose as prediction
-                _, predicted = torch.max(outputs.data, 1)
-                preds.extend(predicted)
-                Y.extend(labels)
+                predicted = (outputs.data.squeeze() > 0.5).float()
+     
+                preds.append(predicted)
+                Y.append(labels.squeeze())
         return preds, Y
 
 
